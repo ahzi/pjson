@@ -14,6 +14,8 @@ class pjson {
       jsonBoolean,
       jsonArray, //[ ] array
       jsonObject, // { ... } map
+
+      jsonError
     };
 
     pjson(); // Default Constructor
@@ -39,6 +41,8 @@ class pjson {
 
     void reset();
     void resetTo(jsonType aeType);
+
+    static pjson* CreateFromString(const char* aSrc, size_t& a_iStart, size_t a_iEnd, pjson* a_pParent);
 
   private:
     void resetIfneeded(jsonType aeType);

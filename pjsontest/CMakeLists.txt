@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.10)
+﻿cmake_minimum_required(VERSION 3.21)
 
 set (TARGET_NAME pjsontest)
 
@@ -10,7 +10,7 @@ set (INCLUDE_DIR "include")
 
 # Project Src files
 set (SRC_FILES ${SRC_FILES}
-${SRC_DIR}/pjsontest.cpp
+${SRC_DIR}/main.cpp
 )
 
 # Project external libs
