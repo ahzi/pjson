@@ -1,7 +1,7 @@
 #include "pjson.h"
 
-
 //-----------------------------------------------------------------
+/*
 int stricmp(const char *p1, const char *p2){
   register unsigned char *s1 = (unsigned char *) p1;
   register unsigned char *s2 = (unsigned char *) p2;
@@ -15,8 +15,8 @@ int stricmp(const char *p1, const char *p2){
   } while (c1 == c2);
   return c1 - c2;  
 }
+*/
 //-----------------------------------------------------------------
-
 pjson::pjson()
 : _eType(jsonType::jsonNull)
 , _pValueRaw(nullptr)
@@ -146,48 +146,80 @@ void pjson::copyFrom(const pjson& aFrom) {
   } //end switch
 }
 //-----------------------------------------------------------------
-std::string pjson::toString() const {
+//std::string pjson::toString() const {
+std::string pjson::toString(int a_iTablen/* = -1 */, int a_iStartDepth/* = 0*/) const {
   std::string out;
+  std::string spaces;
+  if(a_iTablen>0) {
+    spaces = std::string(a_iTablen * a_iStartDepth, ' ');
+  }
   switch(_eType) {
-    case jsonType::jsonNull:         { out = "null"; break; }
-    case jsonType::jsonString:       { out = "\""; out += *_pValueString; out += "\""; break; }
-    case jsonType::jsonNumberInt:    { out = std::to_string(*_pValueInt); break; }
-    case jsonType::jsonNumberFloat:  { out = std::to_string(*_pValueFloat); break; }
-    case jsonType::jsonBoolean:      { out = (*_pValueBool)?"true":"false"; break; }
+    case jsonType::jsonNull:         { out += "null"; break; }
+    case jsonType::jsonString:       { out += "\""; out += *_pValueString; out += "\""; break; }
+    case jsonType::jsonNumberInt:    { out += std::to_string(*_pValueInt); break; }
+    case jsonType::jsonNumberFloat:  { out += std::to_string(*_pValueFloat); break; }
+    case jsonType::jsonBoolean:      { out += (*_pValueBool)?"true":"false"; break; }
     case jsonType::jsonArray:  {
-      out = "[";
+      out += "[";
+      if(a_iTablen>0) {
+        out += '\n';
+      }
       bool bFirstElement = true;
       for (auto it = _pValueArray->begin(); it != _pValueArray->end(); it++) {
         if(!bFirstElement) {
           out += ",";
+          if(a_iTablen>0) {
+            out += '\n';
+          }
+        }
+
+        if(a_iTablen>0) {
+          out += spaces;
         }
         out += " ";
-        out += (*it)->toString();
+        out += (*it)->toString(a_iTablen, a_iStartDepth+1);
         out += " ";
         bFirstElement = false;
       }
       if(bFirstElement) {
           out += " ";
+      }
+      if(a_iTablen>0) {
+        out += '\n';
+        out += spaces;
       }
       out += "]";
       break;
     }
     case jsonType::jsonObject: {
       out = "{";
+      if(a_iTablen>0) {
+        out += '\n';
+      }
       bool bFirstElement = true;
       for (auto it = _pValueMap->begin(); it != _pValueMap->end(); it++) {
         if(!bFirstElement) {
           out += ",";
+          if(a_iTablen>0) {
+            out += '\n';
+          } 
+        }
+        if(a_iTablen>0) {
+          out += spaces;
         }
         out += " \"";
         out += it->first;
         out += "\" : ";
-        out += it->second->toString();
+        out += it->second->toString(a_iTablen, a_iStartDepth+1);
         out += " ";
         bFirstElement = false;
-      }
+    }
       if(bFirstElement) {
           out += " ";
+      }
+      if(a_iTablen>0) {
+        out += '\n';
+        out += spaces;
       }
       out += "}";
       break;
@@ -227,6 +259,91 @@ pjson& pjson::operator=(const bool aBool) {
   return *this;
 }
 //-----------------------------------------------------------------
+#define PJSON_VALUE_ARRAY_SET_ITERATOR      \
+          resetTo(jsonType::jsonArray);     \
+          for(auto i : aValueArray){        \
+            pjson* pTemp = new pjson();     \
+            *pTemp = i;                     \
+            _pValueArray->push_back(pTemp); \
+          }                                 \
+          return *this;
+//-----------------------------------------------------------------
+pjson& pjson::operator=(const std::vector<char*>& aValueArray) {
+  PJSON_VALUE_ARRAY_SET_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator=(const std::vector<int>& aValueArray) {
+  PJSON_VALUE_ARRAY_SET_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator=(const std::vector<float>& aValueArray) {
+  PJSON_VALUE_ARRAY_SET_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator=(const std::vector<bool>& aValueArray) {
+  PJSON_VALUE_ARRAY_SET_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator=(const std::vector<std::string>& aValueArray) {
+  PJSON_VALUE_ARRAY_SET_ITERATOR
+}
+//-----------------------------------------------------------------
+#define PJSON_VALUE_ARRAY_APPEND_ITERATOR       \
+          resetIfneeded(jsonType::jsonArray);   \
+          pjson* pTemp = new pjson();           \
+          *pTemp = aValue;                      \
+          _pValueArray->push_back(pTemp);       \
+          return *this;
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const std::string& aValue) {
+  PJSON_VALUE_ARRAY_APPEND_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const char* aValue) {
+  PJSON_VALUE_ARRAY_APPEND_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const int aValue) {
+  PJSON_VALUE_ARRAY_APPEND_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const float aValue) {
+  PJSON_VALUE_ARRAY_APPEND_ITERATOR
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const bool aValue) {
+  PJSON_VALUE_ARRAY_APPEND_ITERATOR
+}
+//-----------------------------------------------------------------
+#define PJSON_VALUE_ARRAY_APPEND_ARRAY            \
+          resetIfneeded(jsonType::jsonArray);     \
+          for(auto i : aValueArray){              \
+            pjson* pTemp = new pjson();           \
+            *pTemp = i;                           \
+            _pValueArray->push_back(pTemp);       \
+          }                                       \
+          return *this;
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const std::vector<int>& aValueArray) {
+  PJSON_VALUE_ARRAY_APPEND_ARRAY
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const std::vector<char*>& aValueArray) {
+  PJSON_VALUE_ARRAY_APPEND_ARRAY
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const std::vector<float>& aValueArray) {
+  PJSON_VALUE_ARRAY_APPEND_ARRAY
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const std::vector<bool>& aValueArray) {
+  PJSON_VALUE_ARRAY_APPEND_ARRAY
+}
+//-----------------------------------------------------------------
+pjson& pjson::operator+=(const std::vector<std::string>& aValueArray) {
+  PJSON_VALUE_ARRAY_APPEND_ARRAY
+}
+//-----------------------------------------------------------------
 pjson& pjson::operator[] (int index) {
   resetIfneeded(jsonType::jsonArray);
   int iSize = static_cast<int>(_pValueArray->size());
@@ -248,6 +365,18 @@ pjson& pjson::operator[] (int index) {
   return *(*_pValueArray)[static_cast<size_t>(index)];
 }
 //-----------------------------------------------------------------
+pjson& pjson::operator[] (const std::string& aString) {
+  const char* cStr = aString.c_str();
+  resetIfneeded(jsonType::jsonObject);
+  PJSONMAP::iterator it = _pValueMap->find(cStr);
+  if(it != _pValueMap->end()) {
+    return *((*_pValueMap)[cStr]);
+  } 
+  pjson* pNew = new pjson();
+  (*_pValueMap)[cStr] = pNew;
+  return *pNew;
+}
+//-----------------------------------------------------------------
 pjson& pjson::operator[] (const char* aSkey) {
   resetIfneeded(jsonType::jsonObject);
   PJSONMAP::iterator it = _pValueMap->find(aSkey);
@@ -260,183 +389,297 @@ pjson& pjson::operator[] (const char* aSkey) {
 }
 //-----------------------------------------------------------------
 /*static*/
-pjson* pjson::CreateFromString(const char* aSrc, size_t& a_iStart,size_t a_iEnd, pjson* a_pParent) {
+bool pjson::CreateFromString(const char* aSrc, size_t& a_iStart,size_t a_iEnd, pjson*& a_rResult) {
   //1. Scan for fundametal type
-  jsonType eType = jsonType::jsonError;
-  while (a_iStart<a_iEnd) {
-    char aChar = tolower(aSrc[a_iStart]);
-    if('{' == aChar) {
-      eType = jsonType::jsonObject;
+  char aChar;
+  while (ScanToNext(aSrc, a_iStart, a_iEnd, aChar)) {
+    aChar = tolower(aChar);
+    if('\"' == aChar) { 
+      return ScanString(aSrc, a_iStart, a_iEnd, a_rResult); 
+    } 
+    else if('n' == aChar) {
+      return ScanNull(aSrc, a_iStart, a_iEnd, a_rResult); 
+    }
+    else if('t' == aChar || 'f' == aChar) { 
+      return ScanBool(aSrc, a_iStart, a_iEnd, a_rResult); 
+    }
+    else if('+' == aChar || '-' == aChar || '.' == aChar || ('0' <= aChar && '9' >= aChar)) {
+      return ScanNumber(aSrc, a_iStart, a_iEnd, a_rResult);
+    } else if('{' == aChar) {
+      return ScanObject(aSrc, a_iStart, a_iEnd, a_rResult);
     } else if('[' == aChar) {
-      eType = jsonType::jsonArray;
-    } else if('\"' == aChar) {
-      eType = jsonType::jsonString;
-    } else if('n' == aChar) {
-      eType = jsonType::jsonNull;
-    } else if('t' == aChar || 'f' == aChar) {
-      eType = jsonType::jsonBoolean;
-    } else if('.' == aChar|| '-' == aChar || ('0' <= aChar && '9' >= aChar)) {
-      eType = jsonType::jsonNumberInt;
-      for(int i = a_iStart; i<a_iEnd;++i) {
-        if(aSrc[i] == '.' || tolower(aSrc[i]) == 'e' || aSrc[i] == '+') {
-          eType = jsonType::jsonNumberFloat;
-          break;
-        } else if('-' == aChar || ('0' <= aChar && '9' >= aChar)) {
-          continue;
-        } else {
-          break;
-        }
-      }
-    } else if(' ' == aChar || '\t' == aChar || '\0' == aChar || '\n' == aChar) {
-      //ignore
-      ++a_iStart;
+      return ScanArray(aSrc, a_iStart, a_iEnd, a_rResult);
     } else {
-      break; // Invalid Json
+      //unknown
+      break;
     }
   } // end while
 
-  //2. Create Type;
-  if(eType == jsonType::jsonError) {
-    return nullptr;
+  return false;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanBool(const char* aSrc, size_t& a_iStart,const size_t a_iEnd, pjson*& a_rBoolResult) {
+  if((a_iEnd - a_iStart) >= 4 
+    && 't' == tolower(aSrc[a_iStart])
+    && 'r' == tolower(aSrc[a_iStart+1])
+    && 'u' == tolower(aSrc[a_iStart+2])
+    && 'e' == tolower(aSrc[a_iStart+3])) {
+    a_rBoolResult = new pjson();
+    *a_rBoolResult = bool(true);
+    a_iStart+=4;
+    return true;
+  }
+  if((a_iEnd - a_iStart) >= 5 
+    && 'f' == tolower(aSrc[a_iStart])
+    && 'a' == tolower(aSrc[a_iStart+1])
+    && 'l' == tolower(aSrc[a_iStart+2])
+    && 's' == tolower(aSrc[a_iStart+3])
+    && 'e' == tolower(aSrc[a_iStart+4])) {
+    a_rBoolResult = new pjson();
+    *a_rBoolResult = bool(false);
+    a_iStart+=5;
+    return true;
+  }
+  return false;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ExtractString(const char* aSrc, size_t& a_iStart,const size_t a_iEnd, std::string& aStrResult) {
+  if('\"' != aSrc[a_iStart]){
+    return false;
+  }
+  ++a_iStart;
+  int iEnd = a_iStart;
+  int iStart = a_iStart;
+  while(a_iStart<a_iEnd) {
+    char c = aSrc[a_iStart++];
+    if('\"' == c) {
+      iEnd = a_iStart - 1;
+      break;
+    } else if('\\' == c) {
+      ++a_iStart;
+    }
+  }
+  if(iStart<iEnd && iStart >=0 && iEnd >=0) {
+    aStrResult = std::string(aSrc+iStart, iEnd-iStart);
+    return true;
+  }
+  return false;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanString(const char* aSrc, size_t& a_iStart,const size_t a_iEnd, pjson*& a_rStrResult) {
+  std::string str;
+  if(ExtractString(aSrc, a_iStart, a_iEnd, str)) {
+    a_rStrResult = new pjson();
+    *a_rStrResult = str;
+    return true;
+  }
+  return false;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanPastColon(const char* aSrc, size_t& a_iStart,const size_t a_iEnd) {
+  while(a_iStart<a_iEnd) {
+    char c = aSrc[a_iStart++];
+    if(':' == c) {
+      return true;
+    } else if(' ' == c || '\t' == c || '\0' == c || '\n' == c) {
+      //ignore
+    } else {
+      break;    
+    } 
   }
 
-  pjson* pResult = nullptr;
-  switch (eType) {
-    case jsonType::jsonNull: {
-      if((a_iEnd - a_iStart) >= 4 && 0==stricmp(aSrc+a_iStart,"null")) {
-        pResult = new pjson();
-        bool bSet = true;
-        *pResult = bSet;
-        a_iStart+=4;
-      }
-      break; 
-    }
-    case jsonType::jsonString: {
-      int i = a_iStart + 1;
-      while(i<a_iEnd) {
-        if('\\' == aSrc[i]) {
-          ++i;
-        } else if('\"' == aSrc[i]) {
-          break;
-        }
-        ++i;
-      }
-      if(i<a_iEnd) {
-        pResult = new pjson();
-        *pResult = std::string(aSrc+a_iStart+1, i - a_iStart -1);
-        a_iStart = i + 1;
-      }
-      break;
-    }
-    case jsonType::jsonNumberInt:    {
-      int i = a_iStart+1; // ignore the first '-' or digit
-      while(i<a_iEnd) {
-        if(aSrc[i] >= '0' && aSrc[i] <= '9') {
-          ++i;
-        } else {
-          break;
-        }
-      }
-      if(i<a_iEnd) {
-        std::string sTemp = std::string(aSrc+a_iStart, i-a_iStart);
-        pResult = new pjson();
-        *pResult = std::stoi(sTemp);
-        a_iStart = i;
-      }
-      break;
-    }
-    case jsonType::jsonNumberFloat: {
-      int i = a_iStart+1; // ignore the first '-' or digit
-      while(i<a_iEnd) {
-        if('.' == aSrc[i] || '+' == aSrc[i] || 'e' == tolower(aSrc[i]) || (aSrc[i] >= '0' && aSrc[i] <= '9')) {
-          ++i;
-        } else {
-          break;
-        }
-      }
-      if(i<a_iEnd) {
-        std::string sTemp = std::string(aSrc+a_iStart, i-a_iStart);
-        pResult = new pjson();
-        *pResult = std::stof(sTemp);
-        a_iStart = i;
-      }
-      break;
-    }
-    case jsonType::jsonBoolean: {
-      if((a_iEnd - a_iStart) >= 4 && 0==stricmp(aSrc+a_iStart,"true")) {
-        pResult = new pjson();
-        bool bSet = true;
-        *pResult = bSet;
-        a_iStart+=4;
-      } else if((a_iEnd - a_iStart) >= 5 && 0==stricmp(aSrc+a_iStart,"false")) {
-        pResult = new pjson();
-        bool bSet = false;
-        *pResult = bSet;
-        a_iStart+=5;
-      }   
-      break; 
-    }
-    case jsonType::jsonArray: {
-      pResult = new pjson();
-      pResult->resetTo(jsonType::jsonArray);
-      int iCount = 0, iCommaCount = 0;
-      bool bValid = false;
-      ++a_iStart; // ignore first char "["
-      while(a_iStart<a_iEnd) {
-        char aChar = aSrc[a_iStart++];
-        if(' ' == aChar || '\t' == aChar || '\0' == aChar || '\n' == aChar) {
-          //ignore
-        } else if(']' == aChar) {
-          bValid = true;
-          break;
-        } else if(',' == aChar) {
-          ++iCommaCount;
-          if(iCommaCount > iCount) {
-            pjson& pTemp = pResult[iCount++]; 
-          }
-        } else {
-           pResult[iCount++] = CreateFromString(aSrc, a_iStart,a_iEnd, pResult); 
-        }
-      }
-      if(!bValid) {
-        delete pResult;
-        pResult = nullptr;
-      }
-      break;
-    }
-    case jsonType::jsonObject:       { 
-      pResult = new pjson();
-      pResult->resetTo(jsonType::jsonObject);
-      int iCount = 0;
-      bool bValid = false;
-      ++a_iStart; // ignore first char "{"
-      while(a_iStart<a_iEnd) {
-        char aChar = aSrc[a_iStart++];
-        if(' ' == aChar || '\t' == aChar || '\0' == aChar || '\n' == aChar) {
-          //ignore
-        } else if('}' == aChar) {
-          bValid = true;
-          break;
-        } else if('\"' == aChar) {
-          ++iCommaCount;
-          if(iCommaCount > iCount) {
-            pjson& pTemp = pResult[iCount++]; 
-          }
-        } else {
-           pResult[iCount++] = CreateFromString(aSrc, a_iStart,a_iEnd, pResult); 
-        }
-      }
-      if(!bValid) {
-        delete pResult;
-        pResult = nullptr;
-      }
-      break;
-    }
-  } //end switch
-
-  if(!pResult) {
-    a_iStart = a_iEnd;
+  return false;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanToNext(const char* aSrc, size_t& a_iStart,const size_t a_iEnd, char& a_rResult) {
+  while(a_iStart<a_iEnd) {
+    a_rResult = aSrc[a_iStart];
+    if(' ' == a_rResult || '\t' == a_rResult || '\0' == a_rResult || '\n' == a_rResult) {
+      ++a_iStart;
+    } else {
+      return true;
+    } 
   }
 
-  return pResult;
-} //end of function
+  return false;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanNull(const char* aSrc, size_t& a_iStart,const size_t a_iEnd, pjson*& a_rNUllResult) {
+  if((a_iEnd - a_iStart) >= 4 
+     && 'n' == tolower(aSrc[a_iStart])
+     && 'u' == tolower(aSrc[a_iStart+1])
+     && 'l' == tolower(aSrc[a_iStart+2])
+     && 'l' == tolower(aSrc[a_iStart+3])
+    ) {
+    a_rNUllResult = new pjson();
+    a_iStart+=4;
+    return true;
+  }
+  return false; 
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanNumber(const char* aSrc, size_t& a_iStart, const size_t a_iEnd, pjson*& a_rNumResult) {
+  bool bFloat = false;
+  int iEnd = a_iStart;
+  enum NumberSection : int {
+    NumberSectionSign = 0,
+    NumberSectionDigit,
+    NumberSectionDot,
+    NumberSectionDecimal,
+    NumberSectionExponential,
+    NumberSectionExponentialSign,
+    NumberSectionExponentialDigit,
+    NumberEnd
+  };
+  int eSec = NumberSectionSign;
+
+  for(int i = a_iStart; i<a_iEnd && eSec!=NumberEnd; ) {
+    switch ((NumberSection)eSec) {
+      case NumberSectionSign: {
+        if('+' == aSrc[i] || '-' == aSrc[i]) {
+          iEnd = ++i;
+        } 
+        ++eSec;
+        break;
+      }
+      case NumberSectionDigit: {
+        if('0' <= aSrc[i] && '9' >= aSrc[i]) {
+          iEnd = ++i;
+        } else {
+          ++eSec;
+        }
+        break;
+      }
+      case NumberSectionDot: {
+        if('.' == aSrc[i]) {
+          iEnd = ++i;
+          bFloat = true;
+        } 
+        ++eSec;
+        break;
+      }
+      case NumberSectionDecimal: {
+        if('0' <= aSrc[i] && '9' >= aSrc[i]) {
+          iEnd = ++i;
+          bFloat = true;
+        } else {
+          ++eSec;
+        }
+        break;
+      }
+      case NumberSectionExponential: {
+        if('e' == tolower(aSrc[i])) {
+          iEnd = ++i;
+          bFloat = true;
+        } 
+        ++eSec;
+        break;
+      }
+      case NumberSectionExponentialSign: {
+        if('+' == aSrc[i] || '-' == aSrc[i]) {
+          iEnd = ++i;
+          bFloat = true;
+        } 
+        ++eSec;
+        break;
+      }
+      case NumberSectionExponentialDigit: {
+        if('0' <= aSrc[i] && '9' >= aSrc[i]) {
+          iEnd = ++i;
+          bFloat = true;
+        } else {
+          ++eSec;
+        }
+        break;
+      }
+      case NumberEnd: {
+        break;
+      }
+    } // end switch
+  } //end for
+
+  if(iEnd > a_iStart) {
+    std::string sTemp = std::string(aSrc+a_iStart, iEnd-a_iStart);
+    a_rNumResult = new pjson();
+    if(bFloat) {
+      *a_rNumResult = std::stof(sTemp);
+    } else {
+      *a_rNumResult = std::stoi(sTemp);
+    }
+    a_iStart = iEnd;
+    return true; 
+  }
+  return false; 
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanArray(const char* aSrc, size_t& a_iStart, const size_t a_iEnd, pjson*& a_rAResult) {
+  a_rAResult = new pjson();
+  a_rAResult->resetTo(jsonType::jsonArray);
+  bool bValid = false;
+  ++a_iStart; // ignore first char "["
+  char aChar;
+  while(ScanToNext(aSrc, a_iStart, a_iEnd, aChar)) {
+    if(']' == aChar) {
+      ++a_iStart;
+      bValid = true;
+      break;
+    } else if(',' == aChar) {
+      ++a_iStart; //ignore commas
+    } else {
+      pjson* pTemp = nullptr;
+      if(CreateFromString(aSrc, a_iStart,a_iEnd, pTemp)) {
+        a_rAResult->_pValueArray->push_back(pTemp);
+      } else {
+        break;
+      }
+    }
+  }
+  if(!bValid) {
+    delete a_rAResult;
+    a_rAResult = nullptr;
+  }
+
+  return bValid;
+}
+//-----------------------------------------------------------------
+/*static*/
+bool pjson::ScanObject(const char* aSrc, size_t& a_iStart, const size_t a_iEnd, pjson*& a_rAResult) {
+  a_rAResult = new pjson();
+  a_rAResult->resetTo(jsonType::jsonObject);
+  bool bValid = false;
+  ++a_iStart; // ignore first char "{"
+  char aChar;
+  while(ScanToNext(aSrc, a_iStart, a_iEnd, aChar)) {
+    if('}' == aChar) {
+      ++a_iStart;
+      bValid = true;
+      break;
+    } else if(',' == aChar) {
+      ++a_iStart; // ignore commas
+    } else {
+      pjson* pVal = nullptr;
+      std::string mkey;
+      if(ExtractString(aSrc, a_iStart, a_iEnd, mkey)
+          && ScanPastColon(aSrc, a_iStart, a_iEnd)
+          && CreateFromString(aSrc, a_iStart, a_iEnd, pVal)) {
+        //success
+          (*(a_rAResult->_pValueMap))[mkey.c_str()] = pVal;
+      } else {
+        delete a_rAResult;
+        a_rAResult = nullptr;
+        bValid = false;
+        break;
+      }
+    }
+  }
+  return bValid;
+}
+//-----------------------------------------------------------------
