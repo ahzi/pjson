@@ -1,3 +1,6 @@
+// Author: Praveen Babu J D
+// License: Apache 2.0
+//
 #include "pjson.h"
 //-----------------------------------------------------------------
 pjson::pjson()
@@ -88,7 +91,30 @@ int pjson::getInt() {
 }
 //-----------------------------------------------------------------
 bool pjson::getBool() {
-  return (_eType == jsonType::jsonBoolean)? (*_pValueBool): false;
+  switch (_eType) {
+    case jsonType::jsonNull: {
+      return false;
+    }
+    case jsonType::jsonString: {
+      return (_pValueString->length() > 0);
+    }
+    case jsonType::jsonNumberInt: {
+      return bool(*_pValueInt);
+    }
+    case jsonType::jsonNumberFloat: {
+      return bool(*_pValueFloat);
+    }
+    case jsonType::jsonBoolean: {
+      return (*_pValueBool);
+    }
+    break;
+    case jsonType::jsonArray:
+    case jsonType::jsonMap:
+    default:
+      return false;
+    break;
+  }
+  return false;
 }
 //-----------------------------------------------------------------
 std::string pjson::getString() {

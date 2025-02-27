@@ -1,9 +1,10 @@
+// Author: Praveen Babu J D
+// License: Apache 2.0
+//
 #include <iostream>
 #include "pjson.h"
 
 int main() {
- 
-  
   pjson oB;
 
   //pjson& operator[] (const std::string& aString);
