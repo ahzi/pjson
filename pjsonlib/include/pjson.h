@@ -1,6 +1,9 @@
 // Author: Praveen Babu J D
 // License: Apache 2.0
 //
+#ifndef PRAVEENJSON_H
+#define PRAVEENJSON_H
+
 #include <vector>
 //#include <unordered_map>
 #include <map>
@@ -109,3 +112,5 @@ class pjson {
     };
 };
 //========================================================================
+
+#endif /* !PRAVEENJSON_H */
