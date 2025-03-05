@@ -32,12 +32,32 @@ class pjson {
     pjson& operator=(const pjson& aFrom); // Copy assignment
     pjson& operator=(pjson&& a); // Move assignment
 
+    static pjson* CreateFromString(const std::string& aStr);
+    static pjson* CreateFromString(const char* aSrc, size_t a_iSize);
+
+    jsonType getType() const;
+    std::string toString(bool bPretty = false) const;
+    void copyFrom(const pjson& aFrom);
+
+    PJSONARRAY* getArray();
+    PJSONMAP* getMap();
+    float getFloat();
+    int getInt();
+    bool getBool();
+    std::string getString();
+
+    void reset();
+    void resetTo(jsonType aeType);
+
+    pjson& at(const std::string& aString);
+    pjson& at(const char* aSkey);
+    pjson& at(int index);
+
     //Assignment overload
     pjson& operator[] (const std::string& aString);
     pjson& operator[] (const char* aSkey);
     pjson& operator[] (int index);
 
-    //Assignment overload
     pjson& operator=(const std::string& aString);
     pjson& operator=(const char* aCString);
     pjson& operator=(const int aInt);
@@ -64,23 +84,10 @@ class pjson {
     pjson& operator+=(const std::vector<float>& aValueArray);
     pjson& operator+=(const std::vector<bool>& aValueArray);
 
-    jsonType getType() const;
-    std::string toString(bool bPretty = false) const;
-    void copyFrom(const pjson& aFrom);
-
-    void reset();
-    void resetTo(jsonType aeType);
-
-    PJSONARRAY* getArray();
-    PJSONMAP* getMap();
-    float getFloat();
-    int getInt();
-    bool getBool();
-    std::string getString();
-
-
-    static pjson* CreateFromString(const std::string& aStr);
-    static pjson* CreateFromString(const char* aSrc, size_t a_iSize);
+    bool getArrayValues(size_t aFrom, size_t aTo, std::vector<std::string>& aDest);
+    bool getArrayValues(size_t aFrom, size_t aTo, std::vector<int>& aDest);
+    bool getArrayValues(size_t aFrom, size_t aTo, std::vector<float>& aDest);
+    bool getArrayValues(size_t aFrom, size_t aTo, std::vector<bool>& aDest);
 
   private:
     std::string _toString(int a_iIndent) const;

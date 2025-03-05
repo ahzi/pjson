@@ -4,6 +4,28 @@
 #include <iostream>
 #include "pjson.h"
 
+//-----------------------------------------------------------------------------
+#define ARRAY_PRINTER_ACCESSOR(TESTARRAY, ACCESSORFUNC) \
+{ bool bfirst = true;                   \
+  for(auto itr : TESTARRAY) {           \
+    if(!bfirst)                         \
+      std::cout<<" , ";                 \
+    std::cout<<itr->ACCESSORFUNC();     \
+    bfirst = false;                     \
+  }                                     \
+}
+//-----------------------------------------------------------------------------
+#define ARRAY_PRINTER(TESTARRAY)        \
+{ bool bfirst = true;                   \
+  for(auto itr : TESTARRAY) {           \
+    if(!bfirst)                         \
+      std::cout<<" , ";                 \
+    std::cout<<itr;                     \
+    bfirst = false;                     \
+  }                                     \
+}
+//-----------------------------------------------------------------------------
+
 int main() {
   pjson oB;
 
@@ -158,23 +180,25 @@ int main() {
     std::cout<<oA.toString(true);
   }
 
+  bool getArrayValues(size_t aFrom, size_t aTo, std::vector<std::string>& aDest);
+  bool getArrayValues(size_t aFrom, size_t aTo, std::vector<int>& aDest);
+  bool getArrayValues(size_t aFrom, size_t aTo, std::vector<float>& aDest);
+  bool getArrayValues(size_t aFrom, size_t aTo, std::vector<bool>& aDest);
+
   //Array Float Iterator
   {
     std::cout<<std::endl<<"----------------------------------";
-    std::cout<<std::endl<<"Array Float Iterator Test :"<<std::endl;
+    std::cout<<std::endl<<"Array Float Iterator Test :";
     pjson::PJSONARRAY* pArray = oB["floats"].getArray();
     if(pArray) {
-      std::cout<<"Array : ";
-      bool bfirst = true;
-      for(auto iPjons : *pArray) {
-        if(!bfirst) {
-          std::cout<<" , ";
-        }
-        std::cout<<iPjons->getFloat();
-        bfirst = false;
-      }
-    }
+      std::cout<<std::endl<<"Array 1: ";
+      ARRAY_PRINTER_ACCESSOR(*pArray, getFloat)
 
+      std::cout<<std::endl<<"Array 2: ";
+      std::vector<float> vTestFloats;
+      oB["floats"].getArrayValues(0,pArray->size() - 1, vTestFloats);
+      ARRAY_PRINTER(vTestFloats)
+    }
   }
 
   //Array Int Iterator
@@ -183,15 +207,13 @@ int main() {
     std::cout<<std::endl<<"Array Int Iterator Test :"<<std::endl;
     pjson::PJSONARRAY* pArray = oB["ints"].getArray();
     if(pArray) {
-      std::cout<<"Array : ";
-      bool bfirst = true;
-      for(auto iPjons : *pArray) {
-        if(!bfirst) {
-          std::cout<<" , ";
-        }
-        std::cout<<iPjons->getInt();
-        bfirst = false;
-      }
+      std::cout<<std::endl<<"Array 1: ";
+      ARRAY_PRINTER_ACCESSOR(*pArray, getInt)
+
+      std::cout<<std::endl<<"Array 2: ";
+      std::vector<int> vTestInts;
+      oB["ints"].getArrayValues(0,pArray->size() - 1, vTestInts);
+      ARRAY_PRINTER(vTestInts)
     }
   }
 
@@ -201,15 +223,13 @@ int main() {
     std::cout<<std::endl<<"Array String Iterator Test :"<<std::endl;
     pjson::PJSONARRAY* pArray = oB["strings"].getArray();
     if(pArray) {
-      std::cout<<"Array : ";
-      bool bfirst = true;
-      for(auto iPjons : *pArray) {
-        if(!bfirst) {
-          std::cout<<" , ";
-        }
-        std::cout<<iPjons->getString();
-        bfirst = false;
-      }
+      std::cout<<std::endl<<"Array 1: ";
+      ARRAY_PRINTER_ACCESSOR(*pArray, getString)
+
+      std::cout<<std::endl<<"Array 2: ";
+      std::vector<int> vTestStrings;
+      oB["strings"].getArrayValues(0,pArray->size() - 1, vTestStrings);
+      ARRAY_PRINTER(vTestStrings)
     }
   }
   
@@ -219,15 +239,13 @@ int main() {
     std::cout<<std::endl<<"Array Bool Iterator Test :"<<std::endl;
     pjson::PJSONARRAY* pArray = oB["bools"].getArray();
     if(pArray) {
-      std::cout<<"Array : ";
-      bool bfirst = true;
-      for(auto iPjons : *pArray) {
-        if(!bfirst) {
-          std::cout<<" , ";
-        }
-        std::cout<<iPjons->getBool()<<" "<<iPjons->toString();
-        bfirst = false;
-      }
+      std::cout<<std::endl<<"Array 1: ";
+      ARRAY_PRINTER_ACCESSOR(*pArray, getBool)
+
+      std::cout<<std::endl<<"Array 2: ";
+      std::vector<bool> vTestBool;
+      oB["bools"].getArrayValues(0,pArray->size() - 1, vTestBool);
+      ARRAY_PRINTER(vTestBool)
     }
   }
   

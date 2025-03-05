@@ -411,7 +411,58 @@ pjson& pjson::operator+=(const std::vector<std::string>& aValueArray) {
   PJSON_VALUE_ARRAY_APPEND_ARRAY
 }
 //-----------------------------------------------------------------
-pjson& pjson::operator[] (int index) {
+#define PJSON_VALUE_ARRAY_EXTRACT(pjsonfuncname)              \
+  if(_eType != jsonType::jsonArray                            \
+    || aTo>=_pValueArray->size()                              \
+    || aFrom >=_pValueArray->size()                           \
+    || aFrom>aTo) {                                           \
+      return false;                                           \
+    }                                                         \
+  for(size_t i = aFrom; i<=aTo; ++i) {                        \
+    aDest.push_back((*_pValueArray)[i]->pjsonfuncname()); \
+  }                                                           \
+  return true; 
+//-----------------------------------------------------------------
+bool pjson::getArrayValues(size_t aFrom, size_t aTo, std::vector<std::string>& aDest) {
+  PJSON_VALUE_ARRAY_EXTRACT(getString)
+}
+//-----------------------------------------------------------------
+bool pjson::getArrayValues(size_t aFrom, size_t aTo, std::vector<int>& aDest) {
+  PJSON_VALUE_ARRAY_EXTRACT(getInt)
+}
+//-----------------------------------------------------------------
+bool pjson::getArrayValues(size_t aFrom, size_t aTo, std::vector<float>& aDest){
+  PJSON_VALUE_ARRAY_EXTRACT(getFloat)
+}
+//-----------------------------------------------------------------
+bool pjson::getArrayValues(size_t aFrom, size_t aTo, std::vector<bool>& aDest){
+  PJSON_VALUE_ARRAY_EXTRACT(getBool)
+}
+//-----------------------------------------------------------------
+pjson& pjson::at(const std::string& aString) {
+  const char* cStr = aString.c_str();
+  _resetIfneeded(jsonType::jsonMap);
+  PJSONMAP::iterator it = _pValueMap->find(cStr);
+  if(it != _pValueMap->end()) {
+    return *((*_pValueMap)[cStr]);
+  } 
+  pjson* pNew = new pjson();
+  (*_pValueMap)[cStr] = pNew;
+  return *pNew;
+}
+//-----------------------------------------------------------------
+pjson& pjson::at(const char* aSkey) {
+  _resetIfneeded(jsonType::jsonMap);
+  PJSONMAP::iterator it = _pValueMap->find(aSkey);
+  if(it != _pValueMap->end()) {
+    return *((*_pValueMap)[aSkey]);
+  } 
+  pjson* pNew = new pjson();
+  (*_pValueMap)[aSkey] = pNew;
+  return *pNew;
+}
+//-----------------------------------------------------------------
+pjson& pjson::at(int index) {
   _resetIfneeded(jsonType::jsonArray);
   int iSize = static_cast<int>(_pValueArray->size());
   if(index < 0) {
@@ -432,27 +483,16 @@ pjson& pjson::operator[] (int index) {
   return *(*_pValueArray)[static_cast<size_t>(index)];
 }
 //-----------------------------------------------------------------
+pjson& pjson::operator[] (int index) {
+  return at(index);
+}
+//-----------------------------------------------------------------
 pjson& pjson::operator[] (const std::string& aString) {
-  const char* cStr = aString.c_str();
-  _resetIfneeded(jsonType::jsonMap);
-  PJSONMAP::iterator it = _pValueMap->find(cStr);
-  if(it != _pValueMap->end()) {
-    return *((*_pValueMap)[cStr]);
-  } 
-  pjson* pNew = new pjson();
-  (*_pValueMap)[cStr] = pNew;
-  return *pNew;
+  return at(aString);
 }
 //-----------------------------------------------------------------
 pjson& pjson::operator[] (const char* aSkey) {
-  _resetIfneeded(jsonType::jsonMap);
-  PJSONMAP::iterator it = _pValueMap->find(aSkey);
-  if(it != _pValueMap->end()) {
-    return *((*_pValueMap)[aSkey]);
-  } 
-  pjson* pNew = new pjson();
-  (*_pValueMap)[aSkey] = pNew;
-  return *pNew;
+  return at(aSkey);
 }
 //-----------------------------------------------------------------
 /*static*/
